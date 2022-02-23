@@ -1,0 +1,23 @@
+version: "3"
+services:
+  localstack:
+    image: localstack/localstack:0.13.2
+    ports:
+        - '4566:4566'
+        - '4571:4571'
+    environment:
+        - SERVICES=dynamodb,s3,events,eventbridge
+        - DEBUG=${DEBUG- }
+        - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+        - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
+        - '/var/run/docker.sock:/var/run/docker.sock'
+  docker:
+    depends_on:
+      - localstack
+    build:
+      context: .
+    ports:
+      - '4000:4000'
+    env_file:
+      - .env
