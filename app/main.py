@@ -8,10 +8,6 @@ from models import gender as Gender
 from models import userupdateuseremail as update_user_username_email
 # libs
 from pydantic import *
-# models
-#from models import User,get_user,user,userupdatepassword,UserLogin
-#from models import gender as Gender
-#from models import userupdateuseremail as update_user_password_email
 
 # app
 app = FastAPI()
@@ -32,6 +28,14 @@ users = {
 # api key
 APIKey = "123"
 
+
+#startup
+
+@app.on_event("startup")
+def create_table():
+    dynamo.create_table()
+    
+    
 @app.get("/getuser/{username}", tags=["Users"])
 async def GetUserByUsername(username: str):
     return users[username]
