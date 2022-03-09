@@ -3,11 +3,14 @@ from fastapi import Depends, FastAPI,APIRouter
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.security import HTTPBasicCredentials
 # models
-from models import user,userupdatepassword,UserLogin
-from models import gender as Gender
-from models import userupdateuseremail as update_user_username_email
+from app.models import user,userupdatepassword,UserLogin
+from app.models import gender as Gender
+from app.models import userupdateuseremail as update_user_username_email
+# db
+from .database.__init__ import dynamo
 # libs
 from pydantic import *
+import uuid
 
 # app
 app = FastAPI()
@@ -17,25 +20,29 @@ app_auth = APIRouter()
 # fake users db
 users = {
     "xt": {
-        "username": "xt",
+        "id":"74ffb6ee-c413-47ae-875a-14cb2b07bd51",
+        "username":"xt",
         "email": "tawfiq@altooro.com",
         "password":"xt",
         "gender":"male",
         "birthday":"19.5",
-        "age":16
+        "age":16,
+
     },
 }
 # api key
 APIKey = "123"
 
-
-#startup
+# db
 
 @app.on_event("startup")
-def create_table():
+async def stratup_table():
     dynamo.create_table()
-    
-    
+
+@app.get("/get/table")
+async def get_table():
+    return dynamo.get_table()
+
 @app.get("/getuser/{username}", tags=["Users"])
 async def GetUserByUsername(username: str):
     return users[username]
@@ -76,6 +83,11 @@ async def signup(User: user):
     if User.username in users:
         return {"Error":"This username exists"}
     users[User.username] = User
+    x = User.username
+    try:
+        users[x]["id"] = str(uuid.uuid4())
+    except:
+        pass
     return users[User.username]
 
 @app.post("/login", tags=["Users"])
