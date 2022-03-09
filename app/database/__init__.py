@@ -6,8 +6,6 @@ class Dynamo:
     _instances = {
 
     }
-
-
     # crate response
     def create_reso(self):
         try:
@@ -22,46 +20,53 @@ class Dynamo:
         except ClientError as e:
             raise e
 
-    def get_users_table(self):
-        if "users" not in self._instances:
+
+
+    def create_table(self,dynamodb=None):
+        try:
+            if not dynamodb or "resource" not in self._instances:
+                dynamodb = boto3.resource('dynamodb',
+                                   endpoint_url=settings.endpoint_url,
+                                   verify=False,
+                                   region_name='dummy')
+                self._instances["resource"] = dynamodb
+            return self._instances["resource"]
+        except ClientError as e:
+            raise "Error"
+
+    def create_table2(self,dynamodb=None):
+        table = dynamodb.create_table(
+            TableName='table',
+            KeySchema=[
+                {
+                    'AttributeName': 'id',
+                    'KeyType': 'HASH'  # Partition key
+                },
+                {
+                    'AttributeName': 'id',
+                    'KeyType': 'S'  # Sort key
+                }
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 10,
+                'WriteCapacityUnits': 10
+            }
+        )
+        self._instances["created_table"] = True
+        return table
+
+    def get_table(self):
+        if "table" not in self._instances:
             dynamodb = self.create_reso()
             table = dynamodb.Table(settings.table)
-            self._instances["users"] = table
-        return self._instances["users"]
-
-    def create_table(self):
-        try:
-            if "created_table" not in self._instances:
-                dynamodb = self.create_reso()
-                table = \
-                    dynamodb.create_table(
-                        TableName="users",
-                        KeySchema=[
-                            {
-                                'AttributeName': 'id',
-                                'KeyType': 'HASH'
-                            }
-                        ],
-                        AttributeDefinitions=[
-                            {
-                                'AttributeName': 'id',
-                                'AttributeType': 'S'
-                            },
-                        ],
-                        ProvisionedThroughput={
-                            'ReadCapacityUnits': 10,
-                            'WriteCapacityUnits': 10
-                        }
-                    )
-                self._instances["created_table"] = True
-        except ClientError as e:
-            pass
+            self._instances["table"] = table
+        return table
 
     def create_user(self, user):
         try:
             if user.id not in self._instances['created_users']:
                 dynamodb = self.create_reso()
-                table = dynamodb.Table('users')
+                table = dynamodb.Table('table')
                 response = table.get_item(
 
                     Key={
