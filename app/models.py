@@ -18,6 +18,7 @@ class user(BaseModel):
     birthday: date
 
 class userupdateuseremail(BaseModel):
+    id: str
     username: Optional[str]
     email: Optional[EmailStr]
 
