@@ -1,7 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 from app.config import settings
-
+from boto3.dynamodb import table
 class Dynamo:
     _instances = {
         "created_users": []
@@ -57,7 +57,17 @@ class Dynamo:
         else:
             return response['Item']
 
-    # get_all_users > working
+    def get_user_by_id(self,id:str,dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb',endpoint_url=settings.endpoint_url,verify=False,region_name='eu-central-1',aws_access_key_id="hello",aws_secret_access_key="hello")
+        table = dynamodb.Table('table')
+        try:
+            response = table.get_item(Key={'id': id})
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+        else:
+            return response['Item']
+    # get_all_users
     def get_all_users(self,dynamodb=None,users=[]):
         if not dynamodb:
             dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
@@ -72,25 +82,77 @@ class Dynamo:
                 users.append(response['Item'])
         return users
 
-    def response_test(self):
+    def response_test(self,dynamodb=None):
         return "hey!"
 
-    # create user > not working ( example )
-    def put_movie(self ,title, year, plot, rating, dynamodb=None):
+    # update_user > not working
+    def update_username_email(self,id: str, username: str = None , email: str = None, dynamodb=None):
         if not dynamodb:
             dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+        table = dynamodb.Table('table')
+        if self.get_user_by_id(id)!=None:
+            if username != None:
+                response = table.update_item(
+                    Key={'id': id},
+                    AttributeUpdates={
+                    'username': username,
+                    },
+                    ConditionExpression = 'attribute_not_exists(deletedAt)',  # Do not update if deleted
+                    ExpressionAttributeValues={
+                        'username': username
+                    },
+                    ReturnValues="UPDATED_NEW"
+                )
+            if email != None:
+                response2 = table.update_item(
+                    Key={'id': id},
+                    AttributeUpdates={
+                        'email': email,
+                    },
+                    ConditionExpression = 'attribute_not_exists(deletedAt)',  # Do not update if deleted
+                    ExpressionAttributeValues={
+                        'email': email
+                    },
+                    ReturnValues="UPDATED_NEW")
+            return {
+                "username":response,
+                "email":response2,
+            }
+        else:
+            return {"Error":"User Not Found"}
 
+
+    # insert item > not working
+    def insert_items(self,id: str,dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
         table = dynamodb.Table('table')
         response = table.put_item(
             Item={
-                'year': year,
-                'title': title,
-                'info': {
-                    'plot': plot,
-                    'rating': rating
-                }
+                "id":id
             }
         )
-        return response
+        self._instances["created_users"].append(id)
+
+    def delete_user(self,id: str,dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+        table = dynamodb.Table('table')
+        if self.get_user_by_id(id=id):
+            response = table.table.delete_item(Key={
+                "id": id
+            })
+            return response
+        else:
+            return {"Error":"User not Found"}
+
+    def delete_all_users(self,dynamodb=None,responses=[],i=0):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+        for index in self._instances["created_users"]:
+            response = self.delete_user(id=index)
+            responses[i]=response
+            i+=1
+        return responses
 
 dynamo = Dynamo()
