@@ -2,10 +2,28 @@ import boto3
 from botocore.exceptions import ClientError
 from app.config import settings
 from boto3.dynamodb import table
+import uuid
 class Dynamo:
-    _instances = {
-        "created_users": []
-    }
+    _instances = {}
+
+    # create user > working
+    def put_user(self,id:str,username:str,email:str,password:str,age:int,gender:str,birthday:str,dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,
+                                      region_name='eu-central-1', aws_access_key_id="hello",
+                                      aws_secret_access_key="hello")
+        table = dynamodb.Table(settings.table)
+        response = table.put_item(Item={
+                'id': id,
+                'username': username,
+                'email': email,
+                'password': password,
+                'age': age,
+                'gender':gender,
+                'birthday':birthday
+            }
+        )
+        return response
     # create response > working
     def create_reso(self):
         try:
@@ -37,6 +55,45 @@ class Dynamo:
         except ClientError as e:
             raise "Error"
 
+    def create_users_table(dynamodb=None):
+        dynamodb = boto3.resource('dynamodb',
+                                  endpoint_url=settings.endpoint_url,
+                                  verify=False,
+                                  region_name='eu-central-1',
+                                  aws_access_key_id="hello",
+                                  aws_secret_access_key="hello")
+        # Table defination
+        table = dynamodb.create_table(
+            TableName='table',
+            KeySchema=[
+                {
+                    'AttributeName': 'id',
+                    'KeyType': 'HASH'  # Partition key
+                },
+                {
+                    'AttributeName': 'username',
+                    'KeyType': 'RANGE'  # Sort key
+                }
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'id',
+                    # AttributeType defines the data type. 'S' is string type and 'N' is number type
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'username',
+                    'AttributeType': 'S'
+                },
+            ],
+            ProvisionedThroughput={
+                # ReadCapacityUnits set to 10 strongly consistent reads per second
+                'ReadCapacityUnits': 10,
+                'WriteCapacityUnits': 10  # WriteCapacityUnits set to 10 writes per second
+            }
+        )
+        return table
+
     # get_table > working
     def get_table(self,dynamodb=None):
         if "table" not in self._instances:
@@ -67,25 +124,26 @@ class Dynamo:
             print(e.response['Error']['Message'])
         else:
             return response['Item']
-    # get_all_users
-    def get_all_users(self,dynamodb=None,users=[]):
+
+    # get_all_user
+    def get_all_users(self,dynamodb=None):
         if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,
+                                      region_name='eu-central-1', aws_access_key_id="hello",
+                                      aws_secret_access_key="hello")
         table = dynamodb.Table('table')
-        for user in self._instances["created_users"]:
-            try:
-                response = table.get_item(Key={'id': id})
-                user.append(response)
-            except ClientError as e:
-                print(e.response['Error']['Message'])
-            else:
-                users.append(response['Item'])
-        return users
+        response = table.scan()
+        data = response['Items']
+
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            data.extend(response['Items'])
+        return data
 
     def response_test(self,dynamodb=None):
         return "hey!"
 
-    # update_user > not working
+    # update_user
     def update_username_email(self,id: str, username: str = None , email: str = None, dynamodb=None):
         if not dynamodb:
             dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
@@ -120,19 +178,6 @@ class Dynamo:
             }
         else:
             return {"Error":"User Not Found"}
-
-
-    # insert item > not working
-    def insert_items(self,id: str,dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table('table')
-        response = table.put_item(
-            Item={
-                "id":id
-            }
-        )
-        self._instances["created_users"].append(id)
 
     def delete_user(self,id: str,dynamodb=None):
         if not dynamodb:

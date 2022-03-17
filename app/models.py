@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from datetime import date, datetime, time, timedelta
 
 # enum
-class gender(str, Enum):
+class Gender(str, Enum):
     gender1 = 'male'
     gender2 = 'female'
 
@@ -16,6 +16,7 @@ class user(BaseModel):
     password: str
     age: int
     birthday: date
+    gender: Gender
 
 class userupdateuseremail(BaseModel):
     id: str
