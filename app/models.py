@@ -21,7 +21,6 @@ class user(BaseModel):
 class userupdateusername(BaseModel):
     id: str
     username: str
-    newusername: str
 
 class userupdatepassword(BaseModel):
     username: str

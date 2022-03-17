@@ -124,21 +124,6 @@ class Dynamo:
             data.extend(response['Items'])
         return data
 
-    def update_username(self,id:str,username:str,newusername:str, dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        if self.delete_user(id=id,username=username):
-            table.update_item(
-                Key={
-                    'id': id,
-                    'username': username
-                },
-                UpdateExpression='SET username = :val1',
-                ExpressionAttributeValues={
-                    ':val1': newusername,
-                },
-            )
 
     def delete_user(self,id: str,username:str,dynamodb=None):
         if not dynamodb:
@@ -165,5 +150,47 @@ class Dynamo:
             except:
                 responses.append(index["id"] + "error")
         return responses
+
+    def login(self,username: str , password: str ,dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+        table = dynamodb.Table(settings.table)
+        users = self.get_all_users()
+        for user in users:
+            if user["username"] == username and user["password"] == password:
+                return {'Message':'Logged in Succsessfully'}
+            if user["username"] == username:
+                return {'Message': 'Incorrect username or password'}
+        return {'Message':'Incorrect username or password'}
+
+    # not ready yet
+    def update_username(self,id:str,username:str,newusername:str, dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+        table = dynamodb.Table(settings.table)
+        if self.get_user(id=id,username=username):
+            response = table.update_item(
+                Key={
+                    'id': id,
+                },
+                UpdateExpression='SET username = :newUserName',
+            ConditionExpression = 'attribute_not_exists(deletedAt)',
+            ExpressionAttributeValues = {':newUserName': newusername,},ReturnValues = "UPDATED_NEW",)
+        return(response)
+
+    def update_password(self,id:str,password:str,dynamodb=None):
+        if not dynamodb:
+            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
+        table = dynamodb.Table(settings.table)
+        response = table.update_item(
+            Key={
+                'id': id,
+            },
+            UpdateExpression="set password = :r",
+            ExpressionAttributeValues={
+                ':r': password,
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
 dynamo = Dynamo()
