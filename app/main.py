@@ -5,7 +5,7 @@ from fastapi.security import HTTPBasicCredentials
 # models
 from app.models import user,userupdatepassword,UserLogin
 from app.models import Gender
-from app.models import userupdateuseremail as update_user_username_email
+from app.models import userupdateusername as update_user_username
 # db
 from .database.__init__ import dynamo
 # libs
@@ -34,10 +34,10 @@ def create_user(usr: user):
 
 @app.get("/get/user-by-id-username")
 def get_user(id: str,username: str):
-    r= dynamo.get_user(id=id,username=username)
-    if r != None:
+    try:
+        r= dynamo.get_user(id=id,username=username)
         return r
-    else:
+    except:
         return {"Error":"User Not Found"}
 
 @app.get("/get/allusers")
@@ -49,20 +49,13 @@ def getallusers(APIkey: str = Depends(api_key_header)):
     else:
         return {"Error":"Your API Key is wrong"}
 
-@app.put("/update/username-email")
-def update_username_email(user: update_user_username_email):
-    if get_user(user.id,user.username):
-        try:
-            dynamo.update_username_email(id=user.id,username=user.username,email=user.email)
-            return {"Message":"User Updated Succsessfully"}
-        except:
-            return {"Error":"Somthing Wrong Happen"}
-    else:
-        return {"Error":"User Not Found"}
+@app.put("/update/username")
+def update_username(user: update_user_username):
+    dynamo.update_username(id=user.id ,username=user.username , newusername=user.newusername)
 
-@app.delete("/delete/user/{id}")
-def delete_user(id: str):
-    return dynamo.delete_user(id)
+@app.delete("/delete/user/{id}/{username}")
+def delete_user(id: str,username:str):
+    return dynamo.delete_user(id=id,username=username)
 
 @app.delete("/delete/all/users")
 def delete_all_users():

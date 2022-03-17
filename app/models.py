@@ -18,10 +18,10 @@ class user(BaseModel):
     birthday: date
     gender: Gender
 
-class userupdateuseremail(BaseModel):
+class userupdateusername(BaseModel):
     id: str
-    username: Optional[str]
-    email: Optional[EmailStr]
+    username: str
+    newusername: str
 
 class userupdatepassword(BaseModel):
     username: str
