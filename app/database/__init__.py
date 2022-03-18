@@ -2,27 +2,8 @@ import boto3
 from botocore.exceptions import ClientError
 from app.config import settings
 from boto3.dynamodb import table
-import uuid
 class Dynamo:
     _instances = {}
-
-    def put_user(self,id:str,username:str,email:str,password:str,age:int,gender:str,birthday:str,dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,
-                                      region_name='eu-central-1', aws_access_key_id="hello",
-                                      aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        response = table.put_item(Item={
-                'id': id,
-                'username': username,
-                'email': email,
-                'password': password,
-                'age': age,
-                'gender':gender,
-                'birthday':birthday
-            }
-        )
-        return response
 
     def create_reso(self):
         try:
@@ -92,76 +73,13 @@ class Dynamo:
         )
         return table
 
+
     def get_table(self,dynamodb=None):
         if "table" not in self._instances:
             dynamodb = self.create_reso()
             table = dynamodb.Table(settings.table)
             self._instances["table"] = table
         return self._instances["table"]
-
-    def get_user(self, id, username, dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb',endpoint_url=settings.endpoint_url,verify=False,region_name='eu-central-1',aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        try:
-            response = table.get_item(Key={'id': id, 'username': username})
-        except ClientError as e:
-            print(e.response['Error']['Message'])
-        else:
-            return response['Item']
-
-    def get_all_users(self,dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,
-                                      region_name='eu-central-1', aws_access_key_id="hello",
-                                      aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        response = table.scan()
-        data = response['Items']
-
-        while 'LastEvaluatedKey' in response:
-            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            data.extend(response['Items'])
-        return data
-
-
-    def delete_user(self,id: str,username:str,dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        table.delete_item(
-            Key={
-                'id':id,
-                'username':username,
-            }
-        )
-
-    def delete_all_users(self,dynamodb=None,responses=[]):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        scan = self.get_all_users()
-        for index in scan:
-            try:
-                r = table.delete_item(Key={
-                    "id": index["id"]
-                })
-                responses.append(r)
-            except:
-                responses.append(index["id"] + "error")
-        return responses
-
-    def login(self,username: str , password: str ,dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        users = self.get_all_users()
-        for user in users:
-            if user["username"] == username and user["password"] == password:
-                return {'Message':'Logged in Succsessfully'}
-            if user["username"] == username:
-                return {'Message': 'Incorrect username or password'}
-        return {'Message':'Incorrect username or password'}
 
     # not ready yet
     def update_username(self,id:str,username:str,newusername:str, dynamodb=None):
