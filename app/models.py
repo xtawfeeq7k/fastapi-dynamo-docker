@@ -21,6 +21,8 @@ class user(BaseModel):
 class userupdateusername(BaseModel):
     id: str
     username: str
+    newusername:Optional[str]
+    newemail:Optional[str]
 
 class userupdatepassword(BaseModel):
     username: str

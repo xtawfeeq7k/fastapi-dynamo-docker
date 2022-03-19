@@ -17,11 +17,16 @@ from .database.delete_user import delete_user as db_delete_user
 from .database.get_user import get_user as db_get_user
 from .database.login import login as db_login
 from .database.get_all_users import get_all_users as db_get_all_users
+from .database.update_password import update_password as db_update_password
+from .database.update_username import update_username as db_update_username
+from .database.update_email import update_email as db_update_email
+#Settings
+from config import Settings
 
 # app
 app = FastAPI()
 api_key_header = APIKeyHeader(name='X-API-Key', auto_error=True)
-API_Key = "altooro"
+API_Key = Settings.apikey
 app_auth = APIRouter()
 
 @app.on_event("startup")
@@ -48,13 +53,16 @@ def getallusers(APIkey: str = Depends(api_key_header)):
     else:
         return {"Error":"Your API Key is wrong"}
 
-@app.put("/update/username/{username}" , tags=["not working"])
-def update_username(user: update_user_username,username: str):
-    dynamo.update_username(id=user.id ,username=user.username , newusername=username)
+@app.put("/update/username/email" , tags=["not working"])
+def update_username_password(usr: update_user_username):
+    if usr.newusername !=None:
+        db_update_username(id=usr.id ,username=usr.username , newusername=usr.newusername)
+    if usr.newpassword != None:
+        db_update_email(id=usr.id, username=usr.username, newpassword=usr.newpassword)
 
-@app.put('/update/password/{id}/{password}' , tags=['not working'])
-def update_password(id:str,password:str):
-    dynamo.update_password(id=id,password=password)
+@app.put('/update/password/{id}/{username}/{password}')
+def update_password(id:str,username:str,password:str):
+    db_update_password(id=id,username=username,password=password)
 
 @app.post("/login/{username}/{password}")
 def login(username:str,password:str):

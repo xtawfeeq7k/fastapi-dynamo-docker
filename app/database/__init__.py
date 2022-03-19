@@ -11,10 +11,10 @@ class Dynamo:
                 dynamodb = \
                     boto3.resource('dynamodb',
                                    endpoint_url=settings.endpoint_url,
-                                   verify=False,
-                                   region_name='eu-central-1',
-                                   aws_access_key_id="hello",
-                                   aws_secret_access_key = "hello")
+                                   verify=settings.verify,
+                                   region_name=settings.region_name,
+                                   aws_access_key_id=settings.aws_access_key_id,
+                                   aws_secret_access_key = settings.aws_secret_access_key)
                 self._instances["resource"] = dynamodb
             return self._instances["resource"]
         except ClientError as e:
@@ -23,24 +23,26 @@ class Dynamo:
     def create_table(self,dynamodb=None):
         try:
             if not dynamodb or "resource" not in self._instances:
-                dynamodb = boto3.resource('dynamodb',
+                dynamodb = \
+                    boto3.resource('dynamodb',
                                    endpoint_url=settings.endpoint_url,
-                                   verify=False,
-                                   region_name='eu-central-1',
-                                  aws_access_key_id="hello",
-                                  aws_secret_access_key="hello")
+                                   verify=settings.verify,
+                                   region_name=settings.region_name,
+                                   aws_access_key_id=settings.aws_access_key_id,
+                                   aws_secret_access_key=settings.aws_secret_access_key)
                 self._instances["resource"] = dynamodb
             return self._instances["resource"]
         except ClientError as e:
             raise "Error"
 
     def create_users_table(dynamodb=None):
-        dynamodb = boto3.resource('dynamodb',
-                                  endpoint_url=settings.endpoint_url,
-                                  verify=False,
-                                  region_name='eu-central-1',
-                                  aws_access_key_id="hello",
-                                  aws_secret_access_key="hello")
+        dynamodb = \
+            boto3.resource('dynamodb',
+                           endpoint_url=settings.endpoint_url,
+                           verify=settings.verify,
+                           region_name=settings.region_name,
+                           aws_access_key_id=settings.aws_access_key_id,
+                           aws_secret_access_key=settings.aws_secret_access_key)
         # Table defination
         table = dynamodb.create_table(
             TableName='table',
@@ -80,35 +82,5 @@ class Dynamo:
             table = dynamodb.Table(settings.table)
             self._instances["table"] = table
         return self._instances["table"]
-
-    # not ready yet
-    def update_username(self,id:str,username:str,newusername:str, dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        if self.get_user(id=id,username=username):
-            response = table.update_item(
-                Key={
-                    'id': id,
-                },
-                UpdateExpression='SET username = :newUserName',
-            ConditionExpression = 'attribute_not_exists(deletedAt)',
-            ExpressionAttributeValues = {':newUserName': newusername,},ReturnValues = "UPDATED_NEW",)
-        return(response)
-
-    def update_password(self,id:str,password:str,dynamodb=None):
-        if not dynamodb:
-            dynamodb = boto3.resource('dynamodb', endpoint_url=settings.endpoint_url, verify=False,region_name='eu-central-1', aws_access_key_id="hello",aws_secret_access_key="hello")
-        table = dynamodb.Table(settings.table)
-        response = table.update_item(
-            Key={
-                'id': id,
-            },
-            UpdateExpression="set password = :r",
-            ExpressionAttributeValues={
-                ':r': password,
-            },
-            ReturnValues="UPDATED_NEW"
-        )
 
 dynamo = Dynamo()

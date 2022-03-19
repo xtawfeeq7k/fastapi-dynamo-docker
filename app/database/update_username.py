@@ -3,7 +3,7 @@ from botocore.exceptions import ClientError
 from app.config import settings
 from boto3.dynamodb import table
 
-def get_all_users(dynamodb=None):
+def update_username(id: str, username: str, newusername: str, dynamodb=None):
     if not dynamodb:
         dynamodb = \
             boto3.resource('dynamodb',
@@ -13,10 +13,14 @@ def get_all_users(dynamodb=None):
                            aws_access_key_id=settings.aws_access_key_id,
                            aws_secret_access_key=settings.aws_secret_access_key)
     table = dynamodb.Table(settings.table)
-    response = table.scan()
-    data = response['Items']
-
-    while 'LastEvaluatedKey' in response:
-        response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-        data.extend(response['Items'])
-    return data
+    response = table.update_item(
+        Key={
+            'id': id,
+            'username': username,
+        },
+        UpdateExpression="set username = :r",
+        ExpressionAttributeValues={
+            ':r': newusername,
+        },
+        ReturnValues="UPDATED_NEW"
+    )
