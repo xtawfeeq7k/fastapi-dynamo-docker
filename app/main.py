@@ -18,15 +18,14 @@ from .database.get_user import get_user as db_get_user
 from .database.login import login as db_login
 from .database.get_all_users import get_all_users as db_get_all_users
 from .database.update_password import update_password as db_update_password
-from .database.update_username import update_username as db_update_username
 from .database.update_email import update_email as db_update_email
 #Settings
-from config import Settings
+from app.config import settings
 
 # app
 app = FastAPI()
 api_key_header = APIKeyHeader(name='X-API-Key', auto_error=True)
-API_Key = Settings.apikey
+API_Key = settings.apikey
 app_auth = APIRouter()
 
 @app.on_event("startup")
@@ -53,12 +52,15 @@ def getallusers(APIkey: str = Depends(api_key_header)):
     else:
         return {"Error":"Your API Key is wrong"}
 
-@app.put("/update/username/email" , tags=["not working"])
-def update_username_password(usr: update_user_username):
-    if usr.newusername !=None:
-        db_update_username(id=usr.id ,username=usr.username , newusername=usr.newusername)
-    if usr.newpassword != None:
-        db_update_email(id=usr.id, username=usr.username, newpassword=usr.newpassword)
+@app.put("/update/username/{id}/{newusername}")
+def update_username(id:str,username:str,newusername:str):
+    p = db_get_user(id=id,username=username)
+    db_delete_user(id=id,username=username)
+    db_create_user(id=id,username=newusername,email=p["email"],password=p["password"],age=p["age"],gender=p['gender'],birthday=p['birthday'])
+
+@app.put("/update/email/{id}/{username}/{email}")
+def update_email(id:str,username:str,newemail:str):
+    db_update_email(id=id,username=username,email=newemail)
 
 @app.put('/update/password/{id}/{username}/{password}')
 def update_password(id:str,username:str,password:str):

@@ -7,6 +7,6 @@ class Settings(BaseSettings):
   region_name: str = 'eu-central-1'
   aws_access_key_id: str = 'altooro'
   aws_secret_access_key: str = 'altooro'
-  apikey: str = 'altooro'
+  apikey:str= 'altooro'
 
 settings = Settings()
