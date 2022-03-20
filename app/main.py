@@ -38,8 +38,7 @@ async def stratup_table():
 @app.get("/get/user-by-id-username")
 def get_user(id: str,username: str):
     try:
-        r= db_get_user(id=id,username=username)
-        return r
+        return db_get_user(id=id,username=username)
     except:
         return {"Error":"User Not Found"}
 
@@ -54,16 +53,28 @@ def getallusers(APIkey: str = Depends(api_key_header)):
 
 @app.put("/update/username/{id}/{newusername}")
 def update_username(id:str,username:str,newusername:str):
-    p = db_get_user(id=id,username=username)
-    db_delete_user(id=id,username=username)
-    db_create_user(id=id,username=newusername,email=p["email"],password=p["password"],age=p["age"],gender=p['gender'],birthday=p['birthday'])
+    try:
+        p = db_get_user(id=id,username=username)
+        db_delete_user(id=id,username=username)
+        db_create_user(id=id,username=newusername,email=p["email"],password=p["password"],age=p["age"],gender=p['gender'],birthday=p['birthday'])
+    except:
+        return {"Error":"User Not Found"}
 
 @app.put("/update/email/{id}/{username}/{email}")
 def update_email(id:str,username:str,newemail:str):
+    try:
+        db_get_user(id=id,username=username)
+    except:
+        return {"Error":"User Not Found"}
+
     db_update_email(id=id,username=username,email=newemail)
 
 @app.put('/update/password/{id}/{username}/{password}')
 def update_password(id:str,username:str,password:str):
+    try:
+        db_get_user(id=id,username=username)
+    except:
+        return {"Error":"User Not Found"}
     db_update_password(id=id,username=username,password=password)
 
 @app.post("/login/{username}/{password}")
