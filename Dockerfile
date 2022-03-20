@@ -4,7 +4,6 @@ LABEL maintainer="Julian Azzam <julian@altooro.com>"
 
 COPY requirements.txt requirements.txt
 
-RUN pip install pydantic[email]
 RUN pip install -r requirements.txt
 
 EXPOSE 4000
