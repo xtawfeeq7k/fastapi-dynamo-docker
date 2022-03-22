@@ -2,6 +2,7 @@
 from fastapi import Depends, FastAPI,APIRouter
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.security import HTTPBasicCredentials
+from fastapi.middleware.cors import CORSMiddleware
 # libs
 from pydantic import *
 import uuid
@@ -28,6 +29,26 @@ api_key_header = APIKeyHeader(name='X-API-Key', auto_error=True)
 API_Key = settings.apikey
 app_auth = APIRouter()
 
+# CORS
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:4040",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+async def main():
+    return {"message": "Hello World"}
 @app.on_event("startup")
 async def stratup_table():
     dynamo.create_table()
@@ -38,7 +59,8 @@ async def stratup_table():
 @app.get("/get/user-by-id-username")
 def get_user(id: str,username: str):
     try:
-        return db_get_user(id=id,username=username)
+        r= db_get_user(id=id,username=username)
+        return r
     except:
         return {"Error":"User Not Found"}
 
@@ -53,28 +75,17 @@ def getallusers(APIkey: str = Depends(api_key_header)):
 
 @app.put("/update/username/{id}/{newusername}")
 def update_username(id:str,username:str,newusername:str):
-    try:
-        p = db_get_user(id=id,username=username)
-        db_delete_user(id=id,username=username)
-        db_create_user(id=id,username=newusername,email=p["email"],password=p["password"],age=p["age"],gender=p['gender'],birthday=p['birthday'])
-    except:
-        return {"Error":"User Not Found"}
+    p = db_get_user(id=id,username=username)
+    db_delete_user(id=id,username=username)
+    db_create_user(id=id,username=newusername,email=p.email,password=p.password,age=p.age,gender=p.gender,birthday=p.birthday)
+    return p
 
 @app.put("/update/email/{id}/{username}/{email}")
 def update_email(id:str,username:str,newemail:str):
-    try:
-        db_get_user(id=id,username=username)
-    except:
-        return {"Error":"User Not Found"}
-
     db_update_email(id=id,username=username,email=newemail)
 
 @app.put('/update/password/{id}/{username}/{password}')
 def update_password(id:str,username:str,password:str):
-    try:
-        db_get_user(id=id,username=username)
-    except:
-        return {"Error":"User Not Found"}
     db_update_password(id=id,username=username,password=password)
 
 @app.post("/login/{username}/{password}")
