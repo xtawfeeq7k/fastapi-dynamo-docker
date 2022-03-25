@@ -1,10 +1,12 @@
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, HTTPException
-from app.services.login import login as login_crud
+from app.models.User import User
+from app.services.create_user import create_user as create_user_crud
 router = APIRouter()
-@router.post("/{username}/{password}")
-def login(username:str,password:str):
+
+@router.post("/create/user")
+def create_user(usr: User):
     try:
-        return(login_crud(username=username,password=password))
+        create_user_crud(usr)
     except ClientError as e:
         raise HTTPException(status_code=400, detail=e.response)
