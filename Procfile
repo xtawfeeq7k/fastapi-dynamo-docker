@@ -1,1 +1,1 @@
-docker-compose up --build
+heroku container:push web
